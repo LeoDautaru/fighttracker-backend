@@ -1,23 +1,9 @@
-package com.fighttracker.fighttracker_backend.model;
+package com.fighttracker.fighttracker_backend.dto;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "training_sessions")
-public class TrainingSession {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @NotNull(message = "L'utente associato è obbligatorio")
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-    private User user;
+public class TrainingSessionCreateDTO {
 
     @NotBlank(message = "Il tipo di allenamento è obbligatorio")
     @Size(max = 50, message = "Il tipo di allenamento non può superare 50 caratteri")
@@ -37,24 +23,11 @@ public class TrainingSession {
     @NotNull(message = "La data e ora della sessione sono obbligatorie")
     private LocalDateTime dateTime;
 
-    public TrainingSession() {}
+    @NotNull(message = "L'ID utente è obbligatorio")
+    private Long userId;
 
-    public TrainingSession(User user, String type, int duration, int intensity, String notes, LocalDateTime dateTime) {
-        this.user = user;
-        this.type = type;
-        this.duration = duration;
-        this.intensity = intensity;
-        this.notes = notes;
-        this.dateTime = dateTime;
-    }
+    public TrainingSessionCreateDTO() {}
 
-    // getters e setters
-
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-
-    public User getUser() { return user; }
-    public void setUser(User user) { this.user = user; }
 
     public String getType() { return type; }
     public void setType(String type) { this.type = type; }
@@ -70,4 +43,7 @@ public class TrainingSession {
 
     public LocalDateTime getDateTime() { return dateTime; }
     public void setDateTime(LocalDateTime dateTime) { this.dateTime = dateTime; }
+
+    public Long getUserId() { return userId; }
+    public void setUserId(Long userId) { this.userId = userId; }
 }

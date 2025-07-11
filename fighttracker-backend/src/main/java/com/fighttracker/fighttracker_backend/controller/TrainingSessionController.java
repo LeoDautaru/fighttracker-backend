@@ -1,64 +1,107 @@
 package com.fighttracker.fighttracker_backend.controller;
 
+import com.fighttracker.fighttracker_backend.dto.TrainingSessionCreateDTO;
+import com.fighttracker.fighttracker_backend.dto.TrainingSessionDTO;
 import com.fighttracker.fighttracker_backend.model.TrainingSession;
-import com.fighttracker.fighttracker_backend.service.TrainingSessionService;
+import com.fighttracker.fighttracker_backend.model.User;
+import com.fighttracker.fighttracker_backend.repository.TrainingSessionRepository;
+import com.fighttracker.fighttracker_backend.repository.UserRepository;
+
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/training-sessions")
 public class TrainingSessionController {
 
-    private final TrainingSessionService trainingSessionService;
+    @Autowired
+    private TrainingSessionRepository trainingSessionRepository;
 
-    public TrainingSessionController(TrainingSessionService trainingSessionService) {
-        this.trainingSessionService = trainingSessionService;
-    }
-
-    @PostMapping
-    public ResponseEntity<TrainingSession> createSession(@Valid @RequestBody TrainingSession session) {
-        TrainingSession savedSession = trainingSessionService.saveSession(session);
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedSession);
-    }
+    @Autowired
+    private UserRepository userRepository;
 
     @GetMapping
-    public List<TrainingSession> getAllSessions() {
-        return trainingSessionService.findAllSessions();
+    public List<TrainingSessionDTO> getAllSessions() {
+        return trainingSessionRepository.findAll().stream()
+                .map(TrainingSessionDTO::new)
+                .collect(Collectors.toList());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<TrainingSession> getSessionById(@PathVariable Long id) {
-        return trainingSessionService.findById(id)
-                .map(ResponseEntity::ok)
+    public ResponseEntity<?> getSessionById(@PathVariable Long id) {
+        return trainingSessionRepository.findById(id)
+                .map(session -> ResponseEntity.ok(new TrainingSessionDTO(session)))
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @GetMapping("/user/{userId}")
-    public List<TrainingSession> getSessionsByUser(@PathVariable Long userId) {
-        return trainingSessionService.findByUserId(userId);
+    @PostMapping
+    public ResponseEntity<?> createSession(@Valid @RequestBody TrainingSessionCreateDTO dto, BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            String errors = bindingResult.getAllErrors()
+                    .stream()
+                    .map(e -> e.getDefaultMessage())
+                    .collect(Collectors.joining("; "));
+            return ResponseEntity.badRequest().body(errors);
+        }
+
+        User user = userRepository.findById(dto.getUserId()).orElse(null);
+        if (user == null) {
+            return ResponseEntity.badRequest().body("Utente non trovato con ID: " + dto.getUserId());
+        }
+
+        TrainingSession session = new TrainingSession();
+        session.setDateTime(dto.getDateTime());
+        session.setType(dto.getType());
+        session.setNotes(dto.getNotes());
+        session.setDuration(dto.getDuration());
+        session.setIntensity(dto.getIntensity());
+        session.setUser(user);
+
+        TrainingSession saved = trainingSessionRepository.save(session);
+
+        return ResponseEntity.ok(new TrainingSessionDTO(saved));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<TrainingSession> updateSession(@PathVariable Long id, @Valid @RequestBody TrainingSession session) {
-        return trainingSessionService.findById(id)
-                .map(existingSession -> {
-                    session.setId(existingSession.getId());
-                    TrainingSession updatedSession = trainingSessionService.saveSession(session);
-                    return ResponseEntity.ok(updatedSession);
-                })
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<?> updateSession(@PathVariable Long id, @Valid @RequestBody TrainingSessionCreateDTO dto, BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            String errors = bindingResult.getAllErrors()
+                    .stream()
+                    .map(e -> e.getDefaultMessage())
+                    .collect(Collectors.joining("; "));
+            return ResponseEntity.badRequest().body(errors);
+        }
+
+        return trainingSessionRepository.findById(id).map(session -> {
+            User user = userRepository.findById(dto.getUserId()).orElse(null);
+            if (user == null) {
+                return ResponseEntity.badRequest().body("Utente non trovato con ID: " + dto.getUserId());
+            }
+
+            session.setDateTime(dto.getDateTime());
+            session.setType(dto.getType());
+            session.setNotes(dto.getNotes());
+            session.setDuration(dto.getDuration());
+            session.setIntensity(dto.getIntensity());
+            session.setUser(user);
+
+            TrainingSession updated = trainingSessionRepository.save(session);
+            return ResponseEntity.ok(new TrainingSessionDTO(updated));
+        }).orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteSession(@PathVariable Long id) {
-        if (trainingSessionService.findById(id).isPresent()) {
-            trainingSessionService.deleteSession(id);
-            return ResponseEntity.noContent().build();
-        }
-        return ResponseEntity.notFound().build();
+    public ResponseEntity<?> deleteSession(@PathVariable Long id) {
+        return trainingSessionRepository.findById(id).map(session -> {
+            trainingSessionRepository.delete(session);
+            return ResponseEntity.ok().build();
+        }).orElse(ResponseEntity.notFound().build());
     }
 }
