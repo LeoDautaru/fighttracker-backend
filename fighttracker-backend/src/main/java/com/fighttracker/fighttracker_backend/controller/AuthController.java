@@ -2,12 +2,12 @@ package com.fighttracker.fighttracker_backend.controller;
 
 import com.fighttracker.fighttracker_backend.dto.AuthRequest;
 import com.fighttracker.fighttracker_backend.dto.AuthResponse;
-import com.fighttracker.fighttracker_backend.util.JwtUtil;
+import com.fighttracker.fighttracker_backend.dto.UserCreateDTO;
+import com.fighttracker.fighttracker_backend.model.User;
+import com.fighttracker.fighttracker_backend.repository.UserRepository;
 import com.fighttracker.fighttracker_backend.service.CustomUserDetailsService;
 import com.fighttracker.fighttracker_backend.service.RefreshTokenService;
-import com.fighttracker.fighttracker_backend.repository.UserRepository;
-import com.fighttracker.fighttracker_backend.model.User;
-import com.fighttracker.fighttracker_backend.dto.UserCreateDTO;
+import com.fighttracker.fighttracker_backend.util.JwtUtil;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -64,13 +64,13 @@ public class AuthController {
     public ResponseEntity<?> createAuthToken(@RequestBody AuthRequest authRequest) {
         try {
             authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(authRequest.getUsername(), authRequest.getPassword())
+                    new UsernamePasswordAuthenticationToken(authRequest.getEmail(), authRequest.getPassword())
             );
         } catch (BadCredentialsException e) {
-            return ResponseEntity.status(401).body("Username o password errati");
+            return ResponseEntity.status(401).body("Email o password errati");
         }
 
-        final UserDetails userDetails = userDetailsService.loadUserByUsername(authRequest.getUsername());
+        final UserDetails userDetails = userDetailsService.loadUserByUsername(authRequest.getEmail());
         final String jwt = jwtUtil.generateToken(userDetails);
 
         return ResponseEntity.ok(new AuthResponse(jwt));
@@ -88,7 +88,7 @@ public class AuthController {
                     }
 
                     String jwt = jwtUtil.generateToken(
-                            userDetailsService.loadUserByUsername(token.getUser().getUsername()));
+                            userDetailsService.loadUserByUsername(token.getUser().getEmail()));
                     return ResponseEntity.ok(Map.of("accessToken", jwt));
                 })
                 .orElse(ResponseEntity.status(403).body("Invalid refresh token"));
