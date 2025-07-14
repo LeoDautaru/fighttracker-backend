@@ -9,10 +9,12 @@ import jakarta.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -64,4 +66,23 @@ public class UserController {
         UserCreateResponseDTO responseDTO = new UserCreateResponseDTO(user.getId(), user.getUsername(), user.getEmail());
         return ResponseEntity.ok(responseDTO);
     }
+
+
+    @GetMapping("/me")
+    public ResponseEntity<?> getCurrentUser(Authentication authentication) {
+        String email = authentication.getName();
+
+        Optional<User> userOpt = userRepository.findByEmail(email);
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(404).body("Utente non trovato");
+        }
+
+        User user = userOpt.get();
+        return ResponseEntity.ok(Map.of(
+                "id", user.getId(),
+                "username", user.getUsername(),
+                "email", user.getEmail()
+        ));
+    }
+
 }
