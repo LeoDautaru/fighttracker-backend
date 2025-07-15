@@ -5,6 +5,8 @@ public class UserProfileUpdateDTO {
     private String email;
     private String profilePictureUrl;
 
+    public UserProfileUpdateDTO() {}
+
 
     public String getUsername() {
         return username;

@@ -24,31 +24,57 @@ public class UserProfileController {
 
     @GetMapping
     public ResponseEntity<?> getProfile(Authentication authentication) {
-        String username = authentication.getName();
-        User user = userRepository.findByUsername(username).orElse(null);
+        String email = authentication.getName();  // usa l'email dal token
+        User user = userRepository.findByEmail(email).orElse(null);
         if (user == null) return ResponseEntity.status(404).body("Utente non trovato");
         return ResponseEntity.ok(user);
     }
 
-    @PutMapping
-    public ResponseEntity<?> updateProfile(@RequestBody UserProfileUpdateDTO profileDTO, Authentication authentication) {
-        String username = authentication.getName();
-        User user = userRepository.findByUsername(username).orElse(null);
+    @PutMapping(consumes = "multipart/form-data")
+    public ResponseEntity<?> updateProfile(
+            @RequestPart("profile") UserProfileUpdateDTO profileDTO,
+            @RequestPart(value = "file", required = false) MultipartFile file,
+            Authentication authentication
+    ) {
+        String email = authentication.getName();  // usa l'email dal token
+        User user = userRepository.findByEmail(email).orElse(null);
         if (user == null) return ResponseEntity.status(404).body("Utente non trovato");
 
         if (profileDTO.getUsername() != null) user.setUsername(profileDTO.getUsername());
         if (profileDTO.getEmail() != null) user.setEmail(profileDTO.getEmail());
         if (profileDTO.getProfilePictureUrl() != null) user.setProfilePictureUrl(profileDTO.getProfilePictureUrl());
 
-        userRepository.save(user);
+        // Gestione file avatar opzionale
+        if (file != null && !file.isEmpty()) {
+            try {
+                String uploadDir = "uploads/profile-pics/";
+                Files.createDirectories(Paths.get(uploadDir));
 
+                String filename = System.currentTimeMillis() + "_" + file.getOriginalFilename();
+                Path filepath = Paths.get(uploadDir, filename);
+
+                file.transferTo(filepath);
+
+                String fileUrl = "/uploads/profile-pics/" + filename;
+                user.setProfilePictureUrl(fileUrl);
+
+            } catch (IOException e) {
+                e.printStackTrace();
+                return ResponseEntity.status(500).body("Errore nel salvataggio del file");
+            }
+        }
+
+        userRepository.save(user);
         return ResponseEntity.ok(user);
     }
 
     @PostMapping("/avatar")
-    public ResponseEntity<?> uploadProfilePicture(@RequestParam("file") MultipartFile file, Authentication authentication) {
-        String username = authentication.getName();
-        User user = userRepository.findByUsername(username).orElse(null);
+    public ResponseEntity<?> uploadProfilePicture(
+            @RequestParam("file") MultipartFile file,
+            Authentication authentication
+    ) {
+        String email = authentication.getName();  // usa l'email dal token
+        User user = userRepository.findByEmail(email).orElse(null);
         if (user == null) return ResponseEntity.status(404).body("Utente non trovato");
 
         if (file.isEmpty()) {
