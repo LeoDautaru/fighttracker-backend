@@ -3,7 +3,6 @@ package com.fighttracker.fighttracker_backend.controller;
 import com.fighttracker.fighttracker_backend.dto.UserProfileUpdateDTO;
 import com.fighttracker.fighttracker_backend.model.User;
 import com.fighttracker.fighttracker_backend.repository.UserRepository;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -24,9 +23,13 @@ public class UserProfileController {
 
     @GetMapping
     public ResponseEntity<?> getProfile(Authentication authentication) {
-        String email = authentication.getName();  // usa l'email dal token
+        String email = authentication.getName(); // Dal token JWT
         User user = userRepository.findByEmail(email).orElse(null);
-        if (user == null) return ResponseEntity.status(404).body("Utente non trovato");
+
+        if (user == null) {
+            return ResponseEntity.status(404).body("Utente non trovato");
+        }
+
         return ResponseEntity.ok(user);
     }
 
@@ -36,15 +39,29 @@ public class UserProfileController {
             @RequestPart(value = "file", required = false) MultipartFile file,
             Authentication authentication
     ) {
-        String email = authentication.getName();  // usa l'email dal token
+        String email = authentication.getName();
         User user = userRepository.findByEmail(email).orElse(null);
-        if (user == null) return ResponseEntity.status(404).body("Utente non trovato");
 
-        if (profileDTO.getUsername() != null) user.setUsername(profileDTO.getUsername());
-        if (profileDTO.getEmail() != null) user.setEmail(profileDTO.getEmail());
-        if (profileDTO.getProfilePictureUrl() != null) user.setProfilePictureUrl(profileDTO.getProfilePictureUrl());
+        if (user == null) {
+            return ResponseEntity.status(404).body("Utente non trovato");
+        }
 
-        // Gestione file avatar opzionale
+        System.out.println("DTO ricevuto: " + profileDTO.getUsername() + ", " + profileDTO.getEmail());
+
+        // Aggiorna i dati
+        if (profileDTO.getUsername() != null) {
+            user.setUsername(profileDTO.getUsername());
+        }
+
+        if (profileDTO.getEmail() != null) {
+            user.setEmail(profileDTO.getEmail());
+        }
+
+        if (profileDTO.getProfilePictureUrl() != null) {
+            user.setProfilePictureUrl(profileDTO.getProfilePictureUrl());
+        }
+
+        // Upload file se presente
         if (file != null && !file.isEmpty()) {
             try {
                 String uploadDir = "uploads/profile-pics/";
@@ -73,11 +90,14 @@ public class UserProfileController {
             @RequestParam("file") MultipartFile file,
             Authentication authentication
     ) {
-        String email = authentication.getName();  // usa l'email dal token
+        String email = authentication.getName();
         User user = userRepository.findByEmail(email).orElse(null);
-        if (user == null) return ResponseEntity.status(404).body("Utente non trovato");
 
-        if (file.isEmpty()) {
+        if (user == null) {
+            return ResponseEntity.status(404).body("Utente non trovato");
+        }
+
+        if (file == null || file.isEmpty()) {
             return ResponseEntity.badRequest().body("File vuoto");
         }
 
@@ -91,7 +111,6 @@ public class UserProfileController {
             file.transferTo(filepath);
 
             String fileUrl = "/uploads/profile-pics/" + filename;
-
             user.setProfilePictureUrl(fileUrl);
             userRepository.save(user);
 
