@@ -21,6 +21,9 @@ public class UserProfileController {
     @Autowired
     private UserRepository userRepository;
 
+    // Percorso assoluto per Windows
+    private static final String UPLOAD_DIR = "C:/Users/Mauro lella cici/Documents/GitHub/fighttracker-backend/fighttracker-backend/uploads/profile-pics/";
+
     @GetMapping
     public ResponseEntity<?> getProfile(Authentication authentication) {
         String email = authentication.getName(); // Dal token JWT
@@ -46,9 +49,8 @@ public class UserProfileController {
             return ResponseEntity.status(404).body("Utente non trovato");
         }
 
-        System.out.println("DTO ricevuto: " + profileDTO.getUsername() + ", " + profileDTO.getEmail());
+        System.out.println("Aggiornamento profilo: " + profileDTO.getUsername() + ", " + profileDTO.getEmail());
 
-        // Aggiorna i dati
         if (profileDTO.getUsername() != null) {
             user.setUsername(profileDTO.getUsername());
         }
@@ -57,23 +59,20 @@ public class UserProfileController {
             user.setEmail(profileDTO.getEmail());
         }
 
-        if (profileDTO.getProfilePictureUrl() != null) {
-            user.setProfilePictureUrl(profileDTO.getProfilePictureUrl());
-        }
-
-        // Upload file se presente
+        // Salvataggio file immagine
         if (file != null && !file.isEmpty()) {
             try {
-                String uploadDir = "uploads/profile-pics/";
-                Files.createDirectories(Paths.get(uploadDir));
+                Files.createDirectories(Paths.get(UPLOAD_DIR));
 
                 String filename = System.currentTimeMillis() + "_" + file.getOriginalFilename();
-                Path filepath = Paths.get(uploadDir, filename);
+                Path filepath = Paths.get(UPLOAD_DIR, filename);
 
-                file.transferTo(filepath);
+                file.transferTo(filepath.toFile());
 
                 String fileUrl = "/uploads/profile-pics/" + filename;
                 user.setProfilePictureUrl(fileUrl);
+
+                System.out.println("Immagine caricata: " + fileUrl);
 
             } catch (IOException e) {
                 e.printStackTrace();
@@ -102,17 +101,18 @@ public class UserProfileController {
         }
 
         try {
-            String uploadDir = "uploads/profile-pics/";
-            Files.createDirectories(Paths.get(uploadDir));
+            Files.createDirectories(Paths.get(UPLOAD_DIR));
 
             String filename = System.currentTimeMillis() + "_" + file.getOriginalFilename();
-            Path filepath = Paths.get(uploadDir, filename);
+            Path filepath = Paths.get(UPLOAD_DIR, filename);
 
-            file.transferTo(filepath);
+            file.transferTo(filepath.toFile());
 
             String fileUrl = "/uploads/profile-pics/" + filename;
             user.setProfilePictureUrl(fileUrl);
             userRepository.save(user);
+
+            System.out.println("Avatar aggiornato: " + fileUrl);
 
             return ResponseEntity.ok(user);
 

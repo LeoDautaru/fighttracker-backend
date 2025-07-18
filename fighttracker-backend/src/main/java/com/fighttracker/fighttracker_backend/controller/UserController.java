@@ -4,9 +4,9 @@ import com.fighttracker.fighttracker_backend.dto.UserCreateDTO;
 import com.fighttracker.fighttracker_backend.dto.UserCreateResponseDTO;
 import com.fighttracker.fighttracker_backend.model.User;
 import com.fighttracker.fighttracker_backend.repository.UserRepository;
+import com.fighttracker.fighttracker_backend.repository.MatchRepository;
 
 import jakarta.validation.Valid;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -23,6 +23,9 @@ public class UserController {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private MatchRepository matchRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -52,37 +55,46 @@ public class UserController {
 
         User savedUser = userRepository.save(user);
 
-        return ResponseEntity.ok(new UserCreateResponseDTO(savedUser.getId(), savedUser.getUsername(), savedUser.getEmail()));
+        return ResponseEntity.ok(
+                new UserCreateResponseDTO(
+                        savedUser.getId(),
+                        savedUser.getUsername(),
+                        savedUser.getEmail()
+                )
+        );
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<?> getUserById(@PathVariable Long id) {
-        Optional<User> userOpt = userRepository.findById(id);
-        if (userOpt.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        User user = userOpt.get();
-        UserCreateResponseDTO responseDTO = new UserCreateResponseDTO(user.getId(), user.getUsername(), user.getEmail());
-        return ResponseEntity.ok(responseDTO);
+        return userRepository.findById(id)
+                .map(user -> ResponseEntity.ok(
+                        new UserCreateResponseDTO(user.getId(), user.getUsername(), user.getEmail())
+                ))
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
-
 
     @GetMapping("/me")
     public ResponseEntity<?> getCurrentUser(Authentication authentication) {
         String email = authentication.getName();
-
         Optional<User> userOpt = userRepository.findByEmail(email);
+
         if (userOpt.isEmpty()) {
             return ResponseEntity.status(404).body("Utente non trovato");
         }
 
         User user = userOpt.get();
+
+        int totalMatches = matchRepository.countByUser(user);
+        int wins = matchRepository.countWinsByUser(user);
+        int losses = matchRepository.countLossesByUser(user);
+
         return ResponseEntity.ok(Map.of(
                 "id", user.getId(),
                 "username", user.getUsername(),
-                "email", user.getEmail()
+                "email", user.getEmail(),
+                "matchesCount", totalMatches,
+                "wins", wins,
+                "losses", losses
         ));
     }
-
 }
