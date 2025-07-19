@@ -10,17 +10,24 @@ import java.util.List;
 
 public interface MatchRepository extends JpaRepository<Match, Long> {
 
-    // Conta tutti i match dell'utente
+    // Conta tutti i match di un utente
     int countByUser(User user);
 
-    // Conta i match vinti (assumendo che 'result' sia una stringa con "WIN")
-    @Query("SELECT COUNT(m) FROM Match m WHERE m.user = :user AND m.result = 'WIN'")
+    // Conta tutte le vittorie (case-insensitive su 'WIN')
+    @Query("SELECT COUNT(m) FROM Match m WHERE m.user = :user AND UPPER(m.result) = 'WIN'")
     int countWinsByUser(@Param("user") User user);
 
-    // Conta i match persi (assumendo che 'result' sia una stringa con "LOSS")
-    @Query("SELECT COUNT(m) FROM Match m WHERE m.user = :user AND m.result = 'LOSS'")
+    // Conta tutte le sconfitte (case-insensitive su 'LOSS')
+    @Query("SELECT COUNT(m) FROM Match m WHERE m.user = :user AND UPPER(m.result) = 'LOSS'")
     int countLossesByUser(@Param("user") User user);
 
-    // Restituisce tutti i match dell'utente ordinati per data decrescente
+    // Recupera tutti i match dell'utente ordinati per data DESC
     List<Match> findByUserIdOrderByDateDesc(Long userId);
+
+    // Query unica per statistiche (totali, vittorie, sconfitte)
+    @Query("SELECT COUNT(m), " +
+            "SUM(CASE WHEN UPPER(m.result) = 'WIN' THEN 1 ELSE 0 END), " +
+            "SUM(CASE WHEN UPPER(m.result) = 'LOSS' THEN 1 ELSE 0 END) " +
+            "FROM Match m WHERE m.user = :user")
+    Object[] getStatsByUser(@Param("user") User user);
 }

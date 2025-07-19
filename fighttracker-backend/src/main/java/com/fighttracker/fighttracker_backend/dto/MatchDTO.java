@@ -1,15 +1,19 @@
 package com.fighttracker.fighttracker_backend.dto;
 
-import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import java.time.LocalDate;
 
 public class MatchDTO {
     private Long id;
     private String opponent;
     private String location;
-    private LocalDateTime date;
+
+    @JsonFormat(pattern = "yyyy-MM-dd")  // Per compatibilità con input date del front-end
+    private LocalDate date;
+
     private String result;
 
-
+    // Getters & Setters
     public Long getId() {
         return id;
     }
@@ -34,11 +38,11 @@ public class MatchDTO {
         this.location = location;
     }
 
-    public LocalDateTime getDate() {
+    public LocalDate getDate() {
         return date;
     }
 
-    public void setDate(LocalDateTime date) {
+    public void setDate(LocalDate date) {
         this.date = date;
     }
 

@@ -2,10 +2,10 @@ package com.fighttracker.fighttracker_backend.controller;
 
 import com.fighttracker.fighttracker_backend.dto.UserCreateDTO;
 import com.fighttracker.fighttracker_backend.dto.UserCreateResponseDTO;
+import com.fighttracker.fighttracker_backend.dto.UserProfileResponse;
 import com.fighttracker.fighttracker_backend.model.User;
 import com.fighttracker.fighttracker_backend.repository.UserRepository;
 import com.fighttracker.fighttracker_backend.repository.MatchRepository;
-
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +14,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -33,19 +34,19 @@ public class UserController {
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@Valid @RequestBody UserCreateDTO dto, BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
-            String errors = bindingResult.getAllErrors()
-                    .stream()
-                    .map(e -> e.getDefaultMessage())
-                    .reduce("", (a, b) -> a + b + "; ");
+            Map<String, String> errors = new HashMap<>();
+            bindingResult.getFieldErrors().forEach(error ->
+                    errors.put(error.getField(), error.getDefaultMessage())
+            );
             return ResponseEntity.badRequest().body(errors);
         }
 
         if (userRepository.existsByEmail(dto.getEmail())) {
-            return ResponseEntity.badRequest().body("Email già in uso");
+            return ResponseEntity.badRequest().body(Map.of("error", "Email già in uso"));
         }
 
         if (userRepository.existsByUsername(dto.getUsername())) {
-            return ResponseEntity.badRequest().body("Username già in uso");
+            return ResponseEntity.badRequest().body(Map.of("error", "Username già in uso"));
         }
 
         User user = new User();
@@ -76,25 +77,28 @@ public class UserController {
     @GetMapping("/me")
     public ResponseEntity<?> getCurrentUser(Authentication authentication) {
         String email = authentication.getName();
-        Optional<User> userOpt = userRepository.findByEmail(email);
 
+        Optional<User> userOpt = userRepository.findByEmail(email);
         if (userOpt.isEmpty()) {
             return ResponseEntity.status(404).body("Utente non trovato");
         }
 
         User user = userOpt.get();
+        Object[] stats = matchRepository.getStatsByUser(user);
 
-        int totalMatches = matchRepository.countByUser(user);
-        int wins = matchRepository.countWinsByUser(user);
-        int losses = matchRepository.countLossesByUser(user);
+        int totalMatches = ((Number) stats[0]).intValue();
+        int wins = ((Number) stats[1]).intValue();
+        int losses = ((Number) stats[2]).intValue();
 
-        return ResponseEntity.ok(Map.of(
-                "id", user.getId(),
-                "username", user.getUsername(),
-                "email", user.getEmail(),
-                "matchesCount", totalMatches,
-                "wins", wins,
-                "losses", losses
-        ));
+        UserProfileResponse response = new UserProfileResponse(
+                user.getUsername(),
+                user.getProfilePictureUrl(),
+                totalMatches,
+                wins,
+                losses
+        );
+
+        return ResponseEntity.ok(response);
     }
+
 }
