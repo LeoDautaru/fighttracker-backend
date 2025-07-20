@@ -15,6 +15,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -84,7 +85,18 @@ public class UserController {
         }
 
         User user = userOpt.get();
-        Object[] stats = matchRepository.getStatsByUser(user);
+
+        // Recupera la lista di risultati (in questo caso, dovrebbe avere un solo elemento)
+        List<Object[]> statsList = matchRepository.getStatsByUser(user);
+
+        Object[] stats;
+        if (statsList.isEmpty()) {
+            // Nessun dato trovato, inizializza con zeri
+            stats = new Object[]{0L, 0L, 0L};
+        } else {
+            // Prendi il primo risultato
+            stats = statsList.get(0);
+        }
 
         int totalMatches = ((Number) stats[0]).intValue();
         int wins = ((Number) stats[1]).intValue();
@@ -100,5 +112,6 @@ public class UserController {
 
         return ResponseEntity.ok(response);
     }
+
 
 }

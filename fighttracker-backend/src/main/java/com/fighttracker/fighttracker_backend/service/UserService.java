@@ -45,7 +45,12 @@ public class UserService {
      * - Sconfitte
      */
     public Map<String, Integer> getUserStats(User user) {
-        Object[] stats = matchRepository.getStatsByUser(user);
+        List<Object[]> statsList = matchRepository.getStatsByUser(user);
+        if (statsList.isEmpty()) {
+            // Nessun dato
+            return Map.of("matchesCount", 0, "wins", 0, "losses", 0);
+        }
+        Object[] stats = statsList.get(0);
         int total = ((Number) stats[0]).intValue();
         int wins = ((Number) stats[1]).intValue();
         int losses = ((Number) stats[2]).intValue();
@@ -56,4 +61,5 @@ public class UserService {
         result.put("losses", losses);
         return result;
     }
+
 }

@@ -30,9 +30,13 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))  // <-- abilita CORS
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**", "/error").permitAll()
+                        .requestMatchers(
+                                "/api/auth/**",
+                                "/api/users/register",  // <-- AGGIUNTO
+                                "/error"
+                        ).permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
@@ -45,8 +49,16 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5177","http://localhost:5176","http://localhost:5175","http://localhost:5174","http://localhost:5173","http://localhost:5172","http://localhost:5171","http://localhost:5170"));
-
+        configuration.setAllowedOrigins(List.of(
+                "http://localhost:5177",
+                "http://localhost:5176",
+                "http://localhost:5175",
+                "http://localhost:5174",
+                "http://localhost:5173",
+                "http://localhost:5172",
+                "http://localhost:5171",
+                "http://localhost:5170"
+        ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

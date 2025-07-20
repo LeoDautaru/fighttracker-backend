@@ -24,10 +24,11 @@ public interface MatchRepository extends JpaRepository<Match, Long> {
     // Recupera tutti i match dell'utente ordinati per data DESC
     List<Match> findByUserIdOrderByDateDesc(Long userId);
 
-    // Query unica per statistiche (totali, vittorie, sconfitte)
     @Query("SELECT COUNT(m), " +
-            "SUM(CASE WHEN UPPER(m.result) = 'WIN' THEN 1 ELSE 0 END), " +
-            "SUM(CASE WHEN UPPER(m.result) = 'LOSS' THEN 1 ELSE 0 END) " +
+            "COALESCE(SUM(CASE WHEN UPPER(m.result) = 'WIN' THEN 1 ELSE 0 END), 0), " +
+            "COALESCE(SUM(CASE WHEN UPPER(m.result) = 'LOSS' THEN 1 ELSE 0 END), 0) " +
             "FROM Match m WHERE m.user = :user")
-    Object[] getStatsByUser(@Param("user") User user);
+    List<Object[]> getStatsByUser(@Param("user") User user);
+
+
 }
