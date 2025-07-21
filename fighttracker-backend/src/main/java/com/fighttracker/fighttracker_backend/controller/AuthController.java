@@ -2,13 +2,16 @@ package com.fighttracker.fighttracker_backend.controller;
 
 import com.fighttracker.fighttracker_backend.dto.AuthRequest;
 import com.fighttracker.fighttracker_backend.dto.AuthResponse;
-import com.fighttracker.fighttracker_backend.util.JwtUtil;
+import com.fighttracker.fighttracker_backend.dto.UserCreateDTO;
+import com.fighttracker.fighttracker_backend.dto.UserCreateResponseDTO;
+import com.fighttracker.fighttracker_backend.model.User;
+import com.fighttracker.fighttracker_backend.model.RefreshToken;
+import com.fighttracker.fighttracker_backend.repository.UserRepository;
 import com.fighttracker.fighttracker_backend.service.CustomUserDetailsService;
 import com.fighttracker.fighttracker_backend.service.RefreshTokenService;
-import com.fighttracker.fighttracker_backend.repository.UserRepository;
-import com.fighttracker.fighttracker_backend.model.User;
-import com.fighttracker.fighttracker_backend.dto.UserCreateDTO;
+import com.fighttracker.fighttracker_backend.util.JwtUtil;
 
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.*;
@@ -41,7 +44,7 @@ public class AuthController {
     private RefreshTokenService refreshTokenService;
 
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@RequestBody UserCreateDTO userDTO) {
+    public ResponseEntity<?> registerUser(@Valid @RequestBody UserCreateDTO userDTO) {
         if (userRepository.existsByEmail(userDTO.getEmail())) {
             return ResponseEntity.badRequest().body("Email già utilizzata");
         }
@@ -55,25 +58,32 @@ public class AuthController {
         user.setEmail(userDTO.getEmail());
         user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
 
-        userRepository.save(user);
+        User savedUser = userRepository.save(user);
 
-        return ResponseEntity.ok("Utente registrato con successo");
+        return ResponseEntity.ok(new UserCreateResponseDTO(
+                savedUser.getId(),
+                savedUser.getUsername(),
+                savedUser.getEmail()
+        ));
     }
 
     @PostMapping("/login")
     public ResponseEntity<?> createAuthToken(@RequestBody AuthRequest authRequest) {
         try {
             authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(authRequest.getUsername(), authRequest.getPassword())
+                    new UsernamePasswordAuthenticationToken(authRequest.getEmail(), authRequest.getPassword())
             );
         } catch (BadCredentialsException e) {
-            return ResponseEntity.status(401).body("Username o password errati");
+            return ResponseEntity.status(401).body("Email o password errati");
         }
 
-        final UserDetails userDetails = userDetailsService.loadUserByUsername(authRequest.getUsername());
+        final UserDetails userDetails = userDetailsService.loadUserByUsername(authRequest.getEmail());
         final String jwt = jwtUtil.generateToken(userDetails);
 
-        return ResponseEntity.ok(new AuthResponse(jwt));
+        User user = userRepository.findByEmail(authRequest.getEmail()).orElseThrow();
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId());
+
+        return ResponseEntity.ok(new AuthResponse(jwt, refreshToken.getToken()));
     }
 
     @PostMapping("/refresh")
@@ -84,13 +94,13 @@ public class AuthController {
                 .map(token -> {
                     if (refreshTokenService.isExpired(token)) {
                         refreshTokenService.deleteByUserId(token.getUser().getId());
-                        return ResponseEntity.status(403).body("Refresh token expired");
+                        return ResponseEntity.status(403).body("Refresh token scaduto");
                     }
 
                     String jwt = jwtUtil.generateToken(
-                            userDetailsService.loadUserByUsername(token.getUser().getUsername()));
+                            userDetailsService.loadUserByUsername(token.getUser().getEmail()));
                     return ResponseEntity.ok(Map.of("accessToken", jwt));
                 })
-                .orElse(ResponseEntity.status(403).body("Invalid refresh token"));
+                .orElse(ResponseEntity.status(403).body("Refresh token non valido"));
     }
 }

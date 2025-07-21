@@ -40,26 +40,36 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
 
         final String authHeader = request.getHeader("Authorization");
+        System.out.println("Auth header: " + authHeader);
+
         String username = null;
         String jwt = null;
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             jwt = authHeader.substring(7);
+            System.out.println("JWT estratto: " + jwt);
             username = jwtUtil.extractUsername(jwt);
+            System.out.println("Username estratto dal token: " + username);
+        } else {
+            System.out.println("Header Authorization mancante o non in formato Bearer");
         }
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-
             if (jwtUtil.validateToken(jwt, userDetails)) {
                 UsernamePasswordAuthenticationToken authToken =
                         new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
                 SecurityContextHolder.getContext().setAuthentication(authToken);
+                System.out.println("Autenticazione impostata nel SecurityContext per: " + username);
+            } else {
+                System.out.println("Token non valido");
             }
+        } else if (username == null) {
+            System.out.println("Username nullo o autenticazione già presente");
         }
+
         filterChain.doFilter(request, response);
     }
+
 }

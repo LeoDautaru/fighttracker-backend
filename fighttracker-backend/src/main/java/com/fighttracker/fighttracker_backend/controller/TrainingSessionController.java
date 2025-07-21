@@ -6,6 +6,10 @@ import com.fighttracker.fighttracker_backend.model.TrainingSession;
 import com.fighttracker.fighttracker_backend.model.User;
 import com.fighttracker.fighttracker_backend.repository.TrainingSessionRepository;
 import com.fighttracker.fighttracker_backend.repository.UserRepository;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+
 
 import jakarta.validation.Valid;
 
@@ -16,6 +20,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.Optional;
+
 
 @RestController
 @RequestMapping("/api/training-sessions")
@@ -41,8 +47,14 @@ public class TrainingSessionController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+
+
     @PostMapping
-    public ResponseEntity<?> createSession(@Valid @RequestBody TrainingSessionCreateDTO dto, BindingResult bindingResult) {
+    public ResponseEntity<?> createSession(
+            @Valid @RequestBody TrainingSessionCreateDTO dto,
+            BindingResult bindingResult,
+            @RequestHeader("Authorization") String authorizationHeader) {
+
         if (bindingResult.hasErrors()) {
             String errors = bindingResult.getAllErrors()
                     .stream()
@@ -51,10 +63,22 @@ public class TrainingSessionController {
             return ResponseEntity.badRequest().body(errors);
         }
 
-        User user = userRepository.findById(dto.getUserId()).orElse(null);
-        if (user == null) {
-            return ResponseEntity.badRequest().body("Utente non trovato con ID: " + dto.getUserId());
+        String username = null;
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof UserDetails) {
+            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+            username = userDetails.getUsername();
         }
+
+        if (username == null) {
+            return ResponseEntity.status(401).body("Utente non autenticato");
+        }
+
+        Optional<User> optionalUser = userRepository.findByUsername(username);
+        if (!optionalUser.isPresent()) {
+            return ResponseEntity.badRequest().body("Utente non trovato con username: " + username);
+        }
+        User user = optionalUser.get();
 
         TrainingSession session = new TrainingSession();
         session.setDateTime(dto.getDateTime());
@@ -68,6 +92,8 @@ public class TrainingSessionController {
 
         return ResponseEntity.ok(new TrainingSessionDTO(saved));
     }
+
+
 
     @PutMapping("/{id}")
     public ResponseEntity<?> updateSession(@PathVariable Long id, @Valid @RequestBody TrainingSessionCreateDTO dto, BindingResult bindingResult) {

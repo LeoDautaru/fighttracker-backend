@@ -1,26 +1,12 @@
 package com.fighttracker.fighttracker_backend.dto;
 
-public class UserCreateResponseDTO {
-    private Long id;
+public class UserProfileUpdateDTO {
     private String username;
     private String email;
+    private String profilePictureUrl;
 
-    public UserCreateResponseDTO() {}
+    public UserProfileUpdateDTO() {}
 
-    public UserCreateResponseDTO(Long id, String username, String email) {
-        this.id = id;
-        this.username = username;
-        this.email = email;
-    }
-
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
 
     public String getUsername() {
         return username;
@@ -36,5 +22,13 @@ public class UserCreateResponseDTO {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getProfilePictureUrl() {
+        return profilePictureUrl;
+    }
+
+    public void setProfilePictureUrl(String profilePictureUrl) {
+        this.profilePictureUrl = profilePictureUrl;
     }
 }
