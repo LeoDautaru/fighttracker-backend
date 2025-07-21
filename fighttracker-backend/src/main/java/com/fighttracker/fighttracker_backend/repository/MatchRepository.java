@@ -10,18 +10,14 @@ import java.util.List;
 
 public interface MatchRepository extends JpaRepository<Match, Long> {
 
-    // Conta tutti i match di un utente
     int countByUser(User user);
 
-    // Conta tutte le vittorie (case-insensitive su 'WIN')
     @Query("SELECT COUNT(m) FROM Match m WHERE m.user = :user AND UPPER(m.result) = 'WIN'")
     int countWinsByUser(@Param("user") User user);
 
-    // Conta tutte le sconfitte (case-insensitive su 'LOSS')
     @Query("SELECT COUNT(m) FROM Match m WHERE m.user = :user AND UPPER(m.result) = 'LOSS'")
     int countLossesByUser(@Param("user") User user);
 
-    // Recupera tutti i match dell'utente ordinati per data DESC
     List<Match> findByUserIdOrderByDateDesc(Long userId);
 
     @Query("SELECT COUNT(m), " +

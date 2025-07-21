@@ -13,7 +13,6 @@ public class UserCreateResponseDTO {
         this.email = email;
     }
 
-    // Getter e Setter
 
     public Long getId() {
         return id;

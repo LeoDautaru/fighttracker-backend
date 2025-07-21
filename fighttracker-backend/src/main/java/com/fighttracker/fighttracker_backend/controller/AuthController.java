@@ -43,7 +43,6 @@ public class AuthController {
     @Autowired
     private RefreshTokenService refreshTokenService;
 
-    // --- REGISTRAZIONE ---
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@Valid @RequestBody UserCreateDTO userDTO) {
         if (userRepository.existsByEmail(userDTO.getEmail())) {
@@ -68,7 +67,6 @@ public class AuthController {
         ));
     }
 
-    // --- LOGIN ---
     @PostMapping("/login")
     public ResponseEntity<?> createAuthToken(@RequestBody AuthRequest authRequest) {
         try {
@@ -82,14 +80,12 @@ public class AuthController {
         final UserDetails userDetails = userDetailsService.loadUserByUsername(authRequest.getEmail());
         final String jwt = jwtUtil.generateToken(userDetails);
 
-        // Crea un refresh token per l'utente
         User user = userRepository.findByEmail(authRequest.getEmail()).orElseThrow();
         RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId());
 
         return ResponseEntity.ok(new AuthResponse(jwt, refreshToken.getToken()));
     }
 
-    // --- REFRESH TOKEN ---
     @PostMapping("/refresh")
     public ResponseEntity<?> refreshToken(@RequestBody Map<String, String> request) {
         String requestToken = request.get("refreshToken");

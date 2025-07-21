@@ -33,7 +33,6 @@ public class Match {
     @JsonBackReference  // Previene loop nella serializzazione JSON
     private User user;
 
-    // --- GETTER & SETTER ---
     public Long getId() {
         return id;
     }

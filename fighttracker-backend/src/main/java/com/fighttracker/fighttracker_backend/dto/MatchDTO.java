@@ -13,7 +13,6 @@ public class MatchDTO {
 
     private String result;
 
-    // Getters & Setters
     public Long getId() {
         return id;
     }

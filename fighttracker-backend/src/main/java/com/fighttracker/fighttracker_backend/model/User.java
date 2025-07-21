@@ -32,7 +32,7 @@ public class User {
     private String password;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference  // Gestisce il lato "padre" della relazione
+    @JsonManagedReference
     private List<Match> matches;
 
     private String profilePictureUrl;
@@ -45,7 +45,6 @@ public class User {
         this.password = password;
     }
 
-    // --- GETTER & SETTER ---
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

@@ -21,7 +21,6 @@ public class UserProfileController {
     @Autowired
     private UserRepository userRepository;
 
-    // Percorso assoluto per Windows
     private static final String UPLOAD_DIR = "C:/Users/Mauro lella cici/Documents/GitHub/fighttracker-backend/fighttracker-backend/uploads/profile-pics/";
 
     @GetMapping
@@ -59,7 +58,6 @@ public class UserProfileController {
             user.setEmail(profileDTO.getEmail());
         }
 
-        // Salvataggio file immagine
         if (file != null && !file.isEmpty()) {
             try {
                 Files.createDirectories(Paths.get(UPLOAD_DIR));

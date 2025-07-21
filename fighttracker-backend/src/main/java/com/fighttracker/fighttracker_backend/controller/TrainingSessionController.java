@@ -63,7 +63,6 @@ public class TrainingSessionController {
             return ResponseEntity.badRequest().body(errors);
         }
 
-        // Recupera username dall'Authentication corrente (assumendo JWT + Spring Security)
         String username = null;
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.getPrincipal() instanceof UserDetails) {

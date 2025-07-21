@@ -21,7 +21,6 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
     }
 
-    // Handler generico per tutte le altre eccezioni
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleAllExceptions(Exception ex) {
         Map<String, String> error = new HashMap<>();

@@ -86,15 +86,12 @@ public class UserController {
 
         User user = userOpt.get();
 
-        // Recupera la lista di risultati (in questo caso, dovrebbe avere un solo elemento)
         List<Object[]> statsList = matchRepository.getStatsByUser(user);
 
         Object[] stats;
         if (statsList.isEmpty()) {
-            // Nessun dato trovato, inizializza con zeri
             stats = new Object[]{0L, 0L, 0L};
         } else {
-            // Prendi il primo risultato
             stats = statsList.get(0);
         }
 
